@@ -1,10 +1,10 @@
-$(".contact_btn").on("click", function () {
+$("#contact-form-data").on("submit", function (e) {
+  e.preventDefault()
   $(".contact_btn i").removeClass("d-none")
 
-  var $form = $("#contact-form-data")
-  var proceed = true
+  const $form = $(this)
+  let proceed = true
 
-  // Basic validation
   $form.find("input, textarea").each(function () {
     if (!$(this).val()) {
       proceed = false
@@ -12,22 +12,20 @@ $(".contact_btn").on("click", function () {
   })
 
   if (proceed) {
-    const formData = new FormData($form[0])
-    formData.append("form-name", "contact") // Must match your Netlify form name
+    const formData = new FormData(this)
+    const formKeyVal = {}
+    for (const [key, value] of formData.entries()) {
+      formKeyVal[key] = value
+    }
 
     fetch("/", {
       method: "POST",
-      body: formData,
+      body: JSON.stringify(formKeyVal),
     })
       .then((response) => {
-        if (response.ok) {
-          output =
-            '<div class="alert-success" style="padding:10px 15px; margin-bottom:30px;">Thank you! Your message has been sent.</div>'
-          $form[0].reset()
-        } else {
-          output =
-            '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">Submission failed. Please try again.</div>'
-        }
+        const output = response.ok
+          ? '<div class="alert-success" style="padding:10px 15px; margin-bottom:30px;">Thank you! Your message has been sent.</div>'
+          : '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">Submission failed. Please try again.</div>'
 
         if ($("#result").length) {
           $("#result").hide().html(output).slideDown()
@@ -35,20 +33,20 @@ $(".contact_btn").on("click", function () {
           Swal.fire({
             icon: response.ok ? "success" : "error",
             title: response.ok ? "Success!" : "Oops...",
-            html:
-              '<div class="' +
-              (response.ok ? "text-success" : "text-danger") +
-              '">' +
-              (response.ok
+            html: `<div class="${
+              response.ok ? "text-success" : "text-danger"
+            }">${
+              response.ok
                 ? "Thank you! Your message has been sent."
-                : "Submission failed. Please try again.") +
-              "</div>",
+                : "Submission failed. Please try again."
+            }</div>`,
           })
         }
 
+        if (response.ok) $form[0].reset()
         $(".contact_btn i").addClass("d-none")
       })
-      .catch((error) => {
+      .catch(() => {
         const errorMsg =
           '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">There was a problem submitting your form. Please try again later.</div>'
 
