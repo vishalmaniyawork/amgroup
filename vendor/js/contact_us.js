@@ -5,78 +5,48 @@ $("#contact-form-data").on("submit", function (e) {
   const $form = $(this)
   let proceed = true
 
-  $form.find("input, textarea").each(function () {
-    if (!$(this).val()) {
-      proceed = false
-    }
+  $form.find("input[name]:not([type=hidden]), textarea").each(function () {
+    if (!$(this).val()) proceed = false
   })
 
   if (proceed) {
-    const formData = new FormData(this)
-    const formKeyVal = {}
-    for (const [key, value] of formData.entries()) {
-      formKeyVal[key] = value
-    }
+    const formData = $form.serialize() // Important: This creates application/x-www-form-urlencoded format
 
-    fetch("/", {
+    $.ajax({
+      url: "/", // Netlify expects it to go to the same page
       method: "POST",
-      body: JSON.stringify(formKeyVal),
-    })
-      .then((response) => {
-        const output = response.ok
-          ? '<div class="alert-success" style="padding:10px 15px; margin-bottom:30px;">Thank you! Your message has been sent.</div>'
-          : '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">Submission failed. Please try again.</div>'
-
-        if ($("#result").length) {
-          $("#result").hide().html(output).slideDown()
-        } else {
-          Swal.fire({
-            icon: response.ok ? "success" : "error",
-            title: response.ok ? "Success!" : "Oops...",
-            html: `<div class="${
-              response.ok ? "text-success" : "text-danger"
-            }">${
-              response.ok
-                ? "Thank you! Your message has been sent."
-                : "Submission failed. Please try again."
-            }</div>`,
-          })
-        }
-
-        if (response.ok) $form[0].reset()
+      data: formData,
+      success: function () {
+        const successMsg =
+          '<div class="alert-success" style="padding:10px 15px; margin-bottom:30px;">Thank you! Your message has been sent.</div>'
+        showResult(successMsg, "success")
+        $form[0].reset()
         $(".contact_btn i").addClass("d-none")
-      })
-      .catch(() => {
+      },
+      error: function () {
         const errorMsg =
           '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">There was a problem submitting your form. Please try again later.</div>'
-
-        if ($("#result").length) {
-          $("#result").hide().html(errorMsg).slideDown()
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Error!",
-            html: '<div class="text-danger">There was a problem submitting your form. Please try again later.</div>',
-          })
-        }
-
+        showResult(errorMsg, "error")
         $(".contact_btn i").addClass("d-none")
-      })
+      },
+    })
   } else {
     const errorMsg =
       '<div class="alert-danger" style="padding:10px 15px; margin-bottom:30px;">Please provide the missing fields.</div>'
+    showResult(errorMsg, "error")
+    $(".contact_btn i").addClass("d-none")
+  }
 
+  function showResult(msg, type) {
     if ($("#result").length) {
-      $("#result").hide().html(errorMsg).slideDown()
+      $("#result").hide().html(msg).slideDown()
     } else {
       Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        html: '<div class="text-danger">Please provide the missing fields.</div>',
+        icon: type,
+        title: type === "success" ? "Success!" : "Oops...",
+        html: msg,
       })
     }
-
-    $(".contact_btn i").addClass("d-none")
   }
 })
 
